@@ -61,6 +61,31 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status, 400)
         self.assertIn("Invalid JSON", body)
 
+    def test_index_page_is_served(self):
+        import tempfile
+        from http.server import ThreadingHTTPServer
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "rag.sqlite3"
+            handler = type("TestHandler", (RagApiHandler,), {"db_path": db_path})
+            server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+
+            try:
+                connection = HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                connection.request("GET", "/")
+                response = connection.getresponse()
+                body = response.read().decode("utf-8")
+                connection.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+        self.assertEqual(response.status, 200)
+        self.assertIn("RAG Learning", body)
+
 
 if __name__ == "__main__":
     unittest.main()

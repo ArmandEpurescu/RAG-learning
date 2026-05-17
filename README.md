@@ -53,11 +53,19 @@ python -m rag serve
 
 ## Local API
 
-Start the API server:
+Start the local app and API server:
 
 ```powershell
 python -m rag serve --host 127.0.0.1 --port 8000
 ```
+
+Then open:
+
+```text
+http://127.0.0.1:8000/
+```
+
+The web UI includes chat, retrieval trace, voice input, and optional browser speech output.
 
 Ask without streaming:
 
@@ -77,9 +85,12 @@ Invoke-RestMethod `
 Stream progress and answer tokens with Server-Sent Events:
 
 ```powershell
+$json = '{"question":"What are the goals of this project?","llm":"ollama"}'
+Set-Content -Path .\payload.json -Value $json -NoNewline
+
 curl.exe -N -X POST http://127.0.0.1:8000/ask/stream `
   -H "Content-Type: application/json" `
-  -d '{"question":"What are the goals of this project?","llm":"ollama"}'
+  --data-binary "@payload.json"
 ```
 
 The streaming API exposes retrieval progress, source scores, timings, and output tokens. It does not

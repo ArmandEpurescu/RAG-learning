@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -64,11 +65,19 @@ def build_ask_response(
 
 class RagApiHandler(BaseHTTPRequestHandler):
     db_path = Path("storage/rag.sqlite3")
+    static_dir = Path(__file__).parent / "static"
 
     def log_message(self, format: str, *args: Any) -> None:
         return
 
     def do_GET(self) -> None:
+        if self.path == "/":
+            self._send_file(self.static_dir / "index.html")
+            return
+        if self.path.startswith("/static/"):
+            requested = self.path.removeprefix("/static/").split("?", 1)[0]
+            self._send_file(self.static_dir / requested)
+            return
         if self.path == "/health":
             self._send_json({"ok": True})
             return
@@ -80,29 +89,32 @@ class RagApiHandler(BaseHTTPRequestHandler):
         self._send_json({"error": "Not found"}, status=404)
 
     def do_POST(self) -> None:
-        if self.path == "/ask":
-            payload = self._read_json_or_error()
-            if payload is None:
+        try:
+            if self.path == "/ask":
+                payload = self._read_json_or_error()
+                if payload is None:
+                    return
+                question = str(payload.get("question", "")).strip()
+                if not question:
+                    self._send_json({"error": "Missing question"}, status=400)
+                    return
+                with RagStore(self.db_path) as store:
+                    response = build_ask_response(
+                        store,
+                        question=question,
+                        llm=payload.get("llm"),
+                        top_k=int(payload.get("top_k", 5)),
+                    )
+                self._send_json(response)
                 return
-            question = str(payload.get("question", "")).strip()
-            if not question:
-                self._send_json({"error": "Missing question"}, status=400)
+
+            if self.path == "/ask/stream":
+                self._stream_ask()
                 return
-            with RagStore(self.db_path) as store:
-                response = build_ask_response(
-                    store,
-                    question=question,
-                    llm=payload.get("llm"),
-                    top_k=int(payload.get("top_k", 5)),
-                )
-            self._send_json(response)
-            return
 
-        if self.path == "/ask/stream":
-            self._stream_ask()
-            return
-
-        self._send_json({"error": "Not found"}, status=404)
+            self._send_json({"error": "Not found"}, status=404)
+        except Exception as error:
+            self._send_json({"error": f"Internal server error: {error}"}, status=500)
 
     def _stream_ask(self) -> None:
         payload = self._read_json_or_error()
@@ -188,6 +200,25 @@ class RagApiHandler(BaseHTTPRequestHandler):
         body = json.dumps(payload, indent=2).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_file(self, path: Path) -> None:
+        try:
+            resolved = path.resolve()
+            static_root = self.static_dir.resolve()
+            if static_root not in resolved.parents and resolved != static_root:
+                self._send_json({"error": "Not found"}, status=404)
+                return
+            body = resolved.read_bytes()
+        except FileNotFoundError:
+            self._send_json({"error": "Not found"}, status=404)
+            return
+
+        content_type = mimetypes.guess_type(str(resolved))[0] or "application/octet-stream"
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)

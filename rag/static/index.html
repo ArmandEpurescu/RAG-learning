@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAG Learning</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="chat-pane" aria-label="Chat">
+        <header class="topbar">
+          <div>
+            <h1>RAG Learning</h1>
+            <p id="statusLine">Local assistant over your indexed documents</p>
+          </div>
+          <div class="controls">
+            <label>
+              <span>LLM</span>
+              <select id="llmSelect">
+                <option value="ollama" selected>Ollama</option>
+                <option value="">Extractive</option>
+              </select>
+            </label>
+            <label class="toggle">
+              <input id="speakToggle" type="checkbox" />
+              <span>Speak</span>
+            </label>
+          </div>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="chatForm" class="composer">
+          <button id="voiceButton" class="icon-button" type="button" title="Voice input" aria-label="Voice input">
+            Mic
+          </button>
+          <textarea
+            id="questionInput"
+            rows="1"
+            placeholder="Ask your local knowledge base..."
+            autocomplete="off"
+          ></textarea>
+          <button id="sendButton" type="submit">Send</button>
+        </form>
+      </section>
+
+      <aside class="trace-pane" aria-label="Retrieval trace">
+        <div class="trace-header">
+          <h2>Trace</h2>
+          <button id="clearButton" type="button">Clear</button>
+        </div>
+        <div id="traceLog" class="trace-log"></div>
+      </aside>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
