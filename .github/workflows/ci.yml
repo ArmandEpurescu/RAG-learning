@@ -28,4 +28,4 @@ jobs:
       - name: CLI smoke test
         run: |
           python -m rag ingest data --reset
-          python -m rag ask "documente personale surse citate"
+          python -m rag ask "personal documents cited sources"

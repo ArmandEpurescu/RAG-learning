@@ -5,7 +5,7 @@ from rag.embedding import cosine_similarity, embed
 
 class EmbeddingTests(unittest.TestCase):
     def test_embedding_is_normalized_for_text(self):
-        vector = embed("rag local documente personale")
+        vector = embed("rag local personal documents")
 
         self.assertLess(abs(cosine_similarity(vector, vector) - 1.0), 0.000001)
 

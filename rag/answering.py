@@ -9,16 +9,16 @@ def relevant_results(results: list[SearchResult], min_score: float = 0.05) -> li
 
 def answer_from_results(question: str, results: list[SearchResult]) -> str:
     if not results:
-        return "Nu am gasit inca surse indexate. Adauga fisiere in data/ si ruleaza ingest."
+        return "No indexed sources found yet. Add files to data/ and run ingest."
 
     relevant = relevant_results(results)
     if not relevant:
-        return "Nu am gasit pasaje suficient de relevante in documentele indexate."
+        return "No sufficiently relevant passages were found in the indexed documents."
 
     lines = [
-        f"Intrebare: {question}",
+        f"Question: {question}",
         "",
-        "Raspuns bazat pe sursele gasite:",
+        "Answer based on retrieved sources:",
     ]
 
     for index, result in enumerate(relevant, start=1):
@@ -30,5 +30,5 @@ def answer_from_results(question: str, results: list[SearchResult]) -> str:
         )
 
     lines.append("")
-    lines.append("Nota: acesta este un raspuns extractiv. Pentru sinteza naturala putem adauga un LLM.")
+    lines.append("Note: this is an extractive answer. Use --llm for natural-language synthesis.")
     return "\n".join(lines)

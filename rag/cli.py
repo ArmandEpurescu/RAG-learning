@@ -60,7 +60,7 @@ def main() -> None:
                 try:
                     print(synthesize_with_openai(args.question, relevant))
                 except LlmError as error:
-                    print(f"LLM indisponibil: {error}")
+                    print(f"LLM unavailable: {error}")
                     print()
                     print(answer_from_results(args.question, results))
             else:

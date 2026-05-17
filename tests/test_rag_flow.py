@@ -17,21 +17,21 @@ class RagFlowTests(unittest.TestCase):
             data_dir.mkdir()
             note = data_dir / "note.md"
             note.write_text(
-                "Proiectul RAG pastreaza documentele local si foloseste surse citate.",
+                "The RAG project keeps documents local and uses cited sources.",
                 encoding="utf-8",
             )
 
             store = RagStore(root / "rag.sqlite3")
             try:
                 count = ingest_path(store, data_dir, reset=True)
-                results = search(store, "documente local surse", top_k=3)
-                answer = answer_from_results("Cum sunt pastrate documentele?", results)
+                results = search(store, "documents local sources", top_k=3)
+                answer = answer_from_results("How are documents stored?", results)
             finally:
                 store.close()
 
             self.assertEqual(count, 1)
             self.assertTrue(results)
-            self.assertIn("documentele local", answer)
+            self.assertIn("documents local", answer)
             self.assertIn("note.md#1", answer)
 
 

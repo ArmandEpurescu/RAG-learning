@@ -1,50 +1,51 @@
 # RAG Learning
 
-Un proiect mic de invatare pentru Retrieval-Augmented Generation peste documente personale.
+A small learning project for Retrieval-Augmented Generation over personal documents.
 
-Varianta curenta ruleaza local, fara dependinte externe. Indexeaza fisiere Markdown si text,
-cauta fragmente relevante cu embeddings deterministe prin hashing si compune un raspuns bazat
-strict pe sursele gasite. Optional, poate folosi un LLM prin OpenAI Responses API pentru sinteza.
+The current version runs locally with no external dependencies. It indexes Markdown and text files,
+searches for relevant chunks with deterministic hashing-based embeddings, and composes an answer
+strictly from the retrieved sources. Optionally, it can use an LLM through the OpenAI Responses API
+for synthesis.
 
-## Structura
+## Structure
 
-- `data/` - pune aici notitele si documentele tale `.md` sau `.txt`
-- `rag/` - codul aplicatiei
-- `storage/rag.sqlite3` - baza locala generata dupa indexare
+- `data/` - put your `.md` or `.txt` notes and documents here
+- `rag/` - application code
+- `storage/rag.sqlite3` - local database generated after indexing
 
-## Utilizare
+## Usage
 
 ```powershell
 python -m rag ingest data
-python -m rag ask "Ce obiective am pentru proiect?"
+python -m rag ask "What are the goals of this project?"
 ```
 
-Cu LLM:
+With an LLM:
 
 ```powershell
 $env:OPENAI_API_KEY="..."
-$env:OPENAI_MODEL="modelul-tau"
-python -m rag ask "Ce obiective am pentru proiect?" --llm
+$env:OPENAI_MODEL="your-model"
+python -m rag ask "What are the goals of this project?" --llm
 ```
 
-## Comenzi
+## Commands
 
 ```powershell
 python -m rag ingest data --reset
 python -m rag search "rag local" --top-k 5
-python -m rag ask "Cum functioneaza proiectul?"
+python -m rag ask "How does the project work?"
 ```
 
-## Cum functioneaza
+## How It Works
 
-RAG inseamna Retrieval-Augmented Generation:
+RAG means Retrieval-Augmented Generation:
 
-1. `ingest` citeste documentele si le sparge in fragmente.
-2. Fiecare fragment primeste un vector numeric local.
-3. `ask` transforma intrebarea intr-un vector si cauta fragmente apropiate.
-4. Fara `--llm`, aplicatia afiseaza pasajele relevante.
-5. Cu `--llm`, aplicatia trimite doar pasajele relevante catre model, nu intreaga colectie.
+1. `ingest` reads documents and splits them into chunks.
+2. Each chunk gets a local numeric vector.
+3. `ask` turns the question into a vector and searches for nearby chunks.
+4. Without `--llm`, the app prints the relevant passages.
+5. With `--llm`, the app sends only the retrieved passages to the model, not the whole collection.
 
-Am folosit OpenAI Responses API deoarece documentatia oficiala il descrie ca interfata principala
-pentru generarea de raspunsuri text. Modelul ramane configurabil prin `OPENAI_MODEL`, ca sa nu
-legam proiectul de un nume de model care se poate schimba.
+The OpenAI Responses API is used for optional synthesis because the official documentation presents
+it as the main interface for generating model responses. The model remains configurable through
+`OPENAI_MODEL`, so the project is not locked to a model name that may change.

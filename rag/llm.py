@@ -26,9 +26,9 @@ def load_openai_config() -> OpenAIConfig:
     base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").strip()
 
     if not api_key:
-        raise LlmError("Lipseste OPENAI_API_KEY.")
+        raise LlmError("Missing OPENAI_API_KEY.")
     if not model:
-        raise LlmError("Lipseste OPENAI_MODEL.")
+        raise LlmError("Missing OPENAI_MODEL.")
 
     return OpenAIConfig(api_key=api_key, model=model, base_url=base_url.rstrip("/"))
 
@@ -39,8 +39,8 @@ def build_rag_prompt(question: str, results: list[SearchResult]) -> str:
         context_blocks.append(
             "\n".join(
                 [
-                    f"[{index}] Sursa: {result.chunk.path}#{result.chunk.chunk_index}",
-                    f"Scor: {result.score:.3f}",
+                    f"[{index}] Source: {result.chunk.path}#{result.chunk.chunk_index}",
+                    f"Score: {result.score:.3f}",
                     result.chunk.text,
                 ]
             )
@@ -48,11 +48,11 @@ def build_rag_prompt(question: str, results: list[SearchResult]) -> str:
 
     return "\n\n".join(
         [
-            "Raspunde la intrebare folosind doar contextul de mai jos.",
-            "Daca informatia nu apare in context, spune clar ca nu stii din documentele indexate.",
-            "Citeaza sursele relevante in format [n].",
+            "Answer the question using only the context below.",
+            "If the information is not in the context, clearly say you do not know from the indexed documents.",
+            "Cite relevant sources in [n] format.",
             "",
-            f"Intrebare: {question}",
+            f"Question: {question}",
             "",
             "Context:",
             "\n\n".join(context_blocks),
@@ -64,7 +64,7 @@ def synthesize_with_openai(question: str, results: list[SearchResult]) -> str:
     config = load_openai_config()
     payload = {
         "model": config.model,
-        "instructions": "Esti un asistent RAG concis, prudent si orientat pe surse.",
+        "instructions": "You are a concise, careful, source-grounded RAG assistant.",
         "input": build_rag_prompt(question, results),
         "store": False,
     }
@@ -84,9 +84,9 @@ def synthesize_with_openai(question: str, results: list[SearchResult]) -> str:
             data = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         body = error.read().decode("utf-8", errors="replace")
-        raise LlmError(f"OpenAI API a returnat HTTP {error.code}: {body}") from error
+        raise LlmError(f"OpenAI API returned HTTP {error.code}: {body}") from error
     except urllib.error.URLError as error:
-        raise LlmError(f"Nu pot contacta providerul LLM: {error.reason}") from error
+        raise LlmError(f"Could not contact the LLM provider: {error.reason}") from error
 
     output_text = data.get("output_text")
     if isinstance(output_text, str) and output_text.strip():
@@ -102,5 +102,5 @@ def synthesize_with_openai(question: str, results: list[SearchResult]) -> str:
 
     text = "\n".join(part.strip() for part in parts if part.strip())
     if not text:
-        raise LlmError("Providerul LLM nu a returnat text.")
+        raise LlmError("The LLM provider did not return text.")
     return text
