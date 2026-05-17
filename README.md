@@ -66,6 +66,8 @@ http://127.0.0.1:8000/
 ```
 
 The web UI includes chat, retrieval trace, voice input, and optional browser speech output.
+Voice input and speech output use browser APIs. The available spoken voices depend on the voices
+installed in your browser and operating system.
 
 Ask without streaming:
 
@@ -108,3 +110,20 @@ RAG means Retrieval-Augmented Generation:
 
 Ollama is the default local path because it exposes a small HTTP API on your machine and avoids paid
 API calls. The local model remains configurable through `OLLAMA_MODEL`.
+
+## Personal Context
+
+Add public or non-sensitive notes to `data/`, then reindex:
+
+```powershell
+python -m rag ingest data --reset
+```
+
+For private notes, use `data/private/`. That folder is ignored by Git. Keep account tokens, Discord
+tokens, API keys, and personal secrets out of the public repository.
+
+Potential next integrations:
+
+1. Discord bot that forwards `/ask` messages to the local RAG API.
+2. Local safe tools for notes, Git status, and test runs.
+3. Path of Exile helper notes and build analysis from indexed local files.

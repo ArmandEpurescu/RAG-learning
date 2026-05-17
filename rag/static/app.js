@@ -4,6 +4,7 @@ const chatForm = document.querySelector("#chatForm");
 const questionInput = document.querySelector("#questionInput");
 const llmSelect = document.querySelector("#llmSelect");
 const speakToggle = document.querySelector("#speakToggle");
+const voiceSelect = document.querySelector("#voiceSelect");
 const voiceButton = document.querySelector("#voiceButton");
 const clearButton = document.querySelector("#clearButton");
 const statusLine = document.querySelector("#statusLine");
@@ -11,6 +12,7 @@ const statusLine = document.querySelector("#statusLine");
 let recognition = null;
 let assistantMessage = null;
 let assistantText = "";
+let availableVoices = [];
 
 function addMessage(role, text) {
   const node = document.createElement("div");
@@ -34,8 +36,31 @@ function speak(text) {
   if (!speakToggle.checked || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
+  const selectedVoice = availableVoices.find((voice) => voice.name === voiceSelect.value);
+  if (selectedVoice) utterance.voice = selectedVoice;
   utterance.rate = 1;
   window.speechSynthesis.speak(utterance);
+}
+
+function loadVoices() {
+  if (!("speechSynthesis" in window)) {
+    voiceSelect.disabled = true;
+    return;
+  }
+
+  availableVoices = window.speechSynthesis.getVoices();
+  voiceSelect.textContent = "";
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "System default";
+  voiceSelect.appendChild(defaultOption);
+
+  for (const voice of availableVoices) {
+    const option = document.createElement("option");
+    option.value = voice.name;
+    option.textContent = `${voice.name} (${voice.lang})`;
+    voiceSelect.appendChild(option);
+  }
 }
 
 function parseSse(buffer, onEvent) {
@@ -158,4 +183,8 @@ voiceButton.addEventListener("click", () => {
 });
 
 setupVoice();
+loadVoices();
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
 addMessage("meta", "Ask a question or use the mic. The trace panel shows retrieval steps, sources, and timings.");

@@ -4,3 +4,4 @@ __pycache__/
 storage/
 *.log
 payload.json
+data/private/
