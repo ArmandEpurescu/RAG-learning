@@ -4,6 +4,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from .retrieval import SearchResult
@@ -144,6 +145,47 @@ def synthesize_with_ollama(question: str, results: list[SearchResult]) -> str:
     if isinstance(content, str) and content.strip():
         return content.strip()
     raise LlmError("Ollama did not return text.")
+
+
+def stream_with_ollama(question: str, results: list[SearchResult]) -> Iterator[str]:
+    config = load_ollama_config()
+    payload = {
+        "model": config.model,
+        "stream": True,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a concise, careful, source-grounded RAG assistant.",
+            },
+            {"role": "user", "content": build_rag_prompt(question, results)},
+        ],
+    }
+
+    request = urllib.request.Request(
+        url=f"{config.base_url}/api/chat",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            for raw_line in response:
+                if not raw_line.strip():
+                    continue
+                data = json.loads(raw_line.decode("utf-8"))
+                content = data.get("message", {}).get("content", "")
+                if content:
+                    yield content
+                if data.get("done"):
+                    break
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise LlmError(f"Ollama returned HTTP {error.code}: {body}") from error
+    except urllib.error.URLError as error:
+        raise LlmError(
+            "Could not contact Ollama. Start it with `ollama serve` or open the Ollama app."
+        ) from error
 
 
 def synthesize_with_openai(question: str, results: list[SearchResult]) -> str:

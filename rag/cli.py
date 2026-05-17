@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from .answering import answer_from_results, relevant_results
+from .api import serve
 from .ingest import ingest_path
 from .llm import LlmError, synthesize
 from .retrieval import search
@@ -36,6 +37,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers.add_parser("status", help="Show index and LLM provider status")
+
+    serve_parser = subparsers.add_parser("serve", help="Run the local HTTP API")
+    serve_parser.add_argument("--host", default="127.0.0.1")
+    serve_parser.add_argument("--port", type=int, default=8000)
 
     return parser
 
@@ -70,5 +75,9 @@ def main() -> None:
                 print(answer_from_results(args.question, results))
         elif args.command == "status":
             print(build_status_report(store, Path(args.db)))
+        elif args.command == "serve":
+            store.close()
+            serve(host=args.host, port=args.port, db_path=Path(args.db))
     finally:
-        store.close()
+        if args.command != "serve":
+            store.close()

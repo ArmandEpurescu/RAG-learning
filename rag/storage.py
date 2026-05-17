@@ -23,6 +23,12 @@ class RagStore:
         self.connection.row_factory = sqlite3.Row
         self._init_schema()
 
+    def __enter__(self) -> RagStore:
+        return self
+
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
+        self.close()
+
     def close(self) -> None:
         self.connection.close()
 

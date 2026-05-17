@@ -48,7 +48,35 @@ python -m rag ingest data --reset
 python -m rag search "rag local" --top-k 5
 python -m rag ask "How does the project work?"
 python -m rag status
+python -m rag serve
 ```
+
+## Local API
+
+Start the API server:
+
+```powershell
+python -m rag serve --host 127.0.0.1 --port 8000
+```
+
+Ask without streaming:
+
+```powershell
+curl -X POST http://127.0.0.1:8000/ask `
+  -H "Content-Type: application/json" `
+  -d "{\"question\":\"What are the goals of this project?\",\"llm\":\"ollama\"}"
+```
+
+Stream progress and answer tokens with Server-Sent Events:
+
+```powershell
+curl -N -X POST http://127.0.0.1:8000/ask/stream `
+  -H "Content-Type: application/json" `
+  -d "{\"question\":\"What are the goals of this project?\",\"llm\":\"ollama\"}"
+```
+
+The streaming API exposes retrieval progress, source scores, timings, and output tokens. It does not
+expose hidden model reasoning.
 
 ## How It Works
 
