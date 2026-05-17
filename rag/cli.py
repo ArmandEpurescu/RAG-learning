@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .answering import answer_from_results, relevant_results
 from .ingest import ingest_path
-from .llm import LlmError, synthesize_with_openai
+from .llm import LlmError, synthesize
 from .retrieval import search
 from .storage import RagStore
 
@@ -30,8 +30,8 @@ def build_parser() -> argparse.ArgumentParser:
     ask.add_argument("--top-k", type=int, default=5)
     ask.add_argument(
         "--llm",
-        action="store_true",
-        help="Use OpenAI Responses API for synthesis. Requires OPENAI_API_KEY and OPENAI_MODEL.",
+        choices=["ollama", "openai"],
+        help="Use an LLM provider for synthesis. Use 'ollama' for local models.",
     )
 
     return parser
@@ -58,7 +58,7 @@ def main() -> None:
                     print(answer_from_results(args.question, results))
                     return
                 try:
-                    print(synthesize_with_openai(args.question, relevant))
+                    print(synthesize(args.question, relevant, provider=args.llm))
                 except LlmError as error:
                     print(f"LLM unavailable: {error}")
                     print()

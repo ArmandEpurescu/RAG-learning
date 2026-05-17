@@ -4,8 +4,7 @@ A small learning project for Retrieval-Augmented Generation over personal docume
 
 The current version runs locally with no external dependencies. It indexes Markdown and text files,
 searches for relevant chunks with deterministic hashing-based embeddings, and composes an answer
-strictly from the retrieved sources. Optionally, it can use an LLM through the OpenAI Responses API
-for synthesis.
+strictly from the retrieved sources. Optionally, it can use a local LLM through Ollama for synthesis.
 
 ## Structure
 
@@ -20,12 +19,26 @@ python -m rag ingest data
 python -m rag ask "What are the goals of this project?"
 ```
 
-With an LLM:
+With a local LLM through Ollama:
+
+```powershell
+ollama pull llama3.2:3b
+python -m rag ask "What are the goals of this project?" --llm ollama
+```
+
+To use another local model:
+
+```powershell
+$env:OLLAMA_MODEL="mistral:7b"
+python -m rag ask "What are the goals of this project?" --llm ollama
+```
+
+OpenAI is still available as an optional provider if you explicitly want it:
 
 ```powershell
 $env:OPENAI_API_KEY="..."
 $env:OPENAI_MODEL="your-model"
-python -m rag ask "What are the goals of this project?" --llm
+python -m rag ask "What are the goals of this project?" --llm openai
 ```
 
 ## Commands
@@ -44,8 +57,7 @@ RAG means Retrieval-Augmented Generation:
 2. Each chunk gets a local numeric vector.
 3. `ask` turns the question into a vector and searches for nearby chunks.
 4. Without `--llm`, the app prints the relevant passages.
-5. With `--llm`, the app sends only the retrieved passages to the model, not the whole collection.
+5. With `--llm ollama`, the app sends only the retrieved passages to the local model, not the whole collection.
 
-The OpenAI Responses API is used for optional synthesis because the official documentation presents
-it as the main interface for generating model responses. The model remains configurable through
-`OPENAI_MODEL`, so the project is not locked to a model name that may change.
+Ollama is the default local path because it exposes a small HTTP API on your machine and avoids paid
+API calls. The local model remains configurable through `OLLAMA_MODEL`.

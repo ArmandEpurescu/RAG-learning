@@ -20,6 +20,12 @@ class OpenAIConfig:
     base_url: str = "https://api.openai.com/v1"
 
 
+@dataclass(frozen=True)
+class OllamaConfig:
+    model: str
+    base_url: str = "http://localhost:11434"
+
+
 def load_openai_config() -> OpenAIConfig:
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     model = os.environ.get("OPENAI_MODEL", "").strip()
@@ -31,6 +37,16 @@ def load_openai_config() -> OpenAIConfig:
         raise LlmError("Missing OPENAI_MODEL.")
 
     return OpenAIConfig(api_key=api_key, model=model, base_url=base_url.rstrip("/"))
+
+
+def load_ollama_config() -> OllamaConfig:
+    model = os.environ.get("OLLAMA_MODEL", "llama3.2:3b").strip()
+    base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").strip()
+
+    if not model:
+        raise LlmError("Missing OLLAMA_MODEL.")
+
+    return OllamaConfig(model=model, base_url=base_url.rstrip("/"))
 
 
 def build_rag_prompt(question: str, results: list[SearchResult]) -> str:
@@ -58,6 +74,53 @@ def build_rag_prompt(question: str, results: list[SearchResult]) -> str:
             "\n\n".join(context_blocks),
         ]
     )
+
+
+def synthesize(question: str, results: list[SearchResult], provider: str) -> str:
+    if provider == "ollama":
+        return synthesize_with_ollama(question, results)
+    if provider == "openai":
+        return synthesize_with_openai(question, results)
+    raise LlmError(f"Unsupported LLM provider: {provider}")
+
+
+def synthesize_with_ollama(question: str, results: list[SearchResult]) -> str:
+    config = load_ollama_config()
+    payload = {
+        "model": config.model,
+        "stream": False,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a concise, careful, source-grounded RAG assistant.",
+            },
+            {"role": "user", "content": build_rag_prompt(question, results)},
+        ],
+    }
+
+    request = urllib.request.Request(
+        url=f"{config.base_url}/api/chat",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise LlmError(f"Ollama returned HTTP {error.code}: {body}") from error
+    except urllib.error.URLError as error:
+        raise LlmError(
+            "Could not contact Ollama. Start it with `ollama serve` or open the Ollama app."
+        ) from error
+
+    message = data.get("message", {})
+    content = message.get("content")
+    if isinstance(content, str) and content.strip():
+        return content.strip()
+    raise LlmError("Ollama did not return text.")
 
 
 def synthesize_with_openai(question: str, results: list[SearchResult]) -> str:
