@@ -81,7 +81,9 @@ class RagApiHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         if self.path == "/ask":
-            payload = self._read_json()
+            payload = self._read_json_or_error()
+            if payload is None:
+                return
             question = str(payload.get("question", "")).strip()
             if not question:
                 self._send_json({"error": "Missing question"}, status=400)
@@ -103,7 +105,9 @@ class RagApiHandler(BaseHTTPRequestHandler):
         self._send_json({"error": "Not found"}, status=404)
 
     def _stream_ask(self) -> None:
-        payload = self._read_json()
+        payload = self._read_json_or_error()
+        if payload is None:
+            return
         question = str(payload.get("question", "")).strip()
         llm = payload.get("llm", "ollama")
         top_k = int(payload.get("top_k", 5))
@@ -168,6 +172,17 @@ class RagApiHandler(BaseHTTPRequestHandler):
             return {}
         body = self.rfile.read(length).decode("utf-8")
         return json.loads(body)
+
+    def _read_json_or_error(self) -> dict[str, Any] | None:
+        try:
+            payload = self._read_json()
+        except json.JSONDecodeError as error:
+            self._send_json({"error": f"Invalid JSON: {error.msg}"}, status=400)
+            return None
+        if not isinstance(payload, dict):
+            self._send_json({"error": "JSON body must be an object"}, status=400)
+            return None
+        return payload
 
     def _send_json(self, payload: dict[str, Any], status: int = 200) -> None:
         body = json.dumps(payload, indent=2).encode("utf-8")

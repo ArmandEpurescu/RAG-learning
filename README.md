@@ -62,17 +62,24 @@ python -m rag serve --host 127.0.0.1 --port 8000
 Ask without streaming:
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/ask `
-  -H "Content-Type: application/json" `
-  -d "{\"question\":\"What are the goals of this project?\",\"llm\":\"ollama\"}"
+$body = @{
+  question = "What are the goals of this project?"
+  llm = "ollama"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Uri http://127.0.0.1:8000/ask `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $body
 ```
 
 Stream progress and answer tokens with Server-Sent Events:
 
 ```powershell
-curl -N -X POST http://127.0.0.1:8000/ask/stream `
+curl.exe -N -X POST http://127.0.0.1:8000/ask/stream `
   -H "Content-Type: application/json" `
-  -d "{\"question\":\"What are the goals of this project?\",\"llm\":\"ollama\"}"
+  -d '{"question":"What are the goals of this project?","llm":"ollama"}'
 ```
 
 The streaming API exposes retrieval progress, source scores, timings, and output tokens. It does not

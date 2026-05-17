@@ -1,7 +1,9 @@
 import unittest
+from http.client import HTTPConnection
 from pathlib import Path
+from threading import Thread
 
-from rag.api import build_ask_response
+from rag.api import RagApiHandler, build_ask_response
 from rag.storage import RagStore
 
 
@@ -28,6 +30,36 @@ class ApiTests(unittest.TestCase):
         self.assertIn("answer", response)
         self.assertEqual(response["debug"]["retrieved_chunks"], 1)
         self.assertEqual(response["sources"][0]["path"], "data/example.md")
+
+    def test_invalid_json_returns_400(self):
+        import tempfile
+        from http.server import ThreadingHTTPServer
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "rag.sqlite3"
+            handler = type("TestHandler", (RagApiHandler,), {"db_path": db_path})
+            server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+
+            try:
+                connection = HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                connection.request(
+                    "POST",
+                    "/ask",
+                    body='{"question": "broken"',
+                    headers={"Content-Type": "application/json"},
+                )
+                response = connection.getresponse()
+                body = response.read().decode("utf-8")
+                connection.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+        self.assertEqual(response.status, 400)
+        self.assertIn("Invalid JSON", body)
 
 
 if __name__ == "__main__":
