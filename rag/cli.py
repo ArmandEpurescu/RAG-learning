@@ -7,6 +7,7 @@ from .answering import answer_from_results, relevant_results
 from .ingest import ingest_path
 from .llm import LlmError, synthesize
 from .retrieval import search
+from .status import build_status_report
 from .storage import RagStore
 
 DEFAULT_DB = Path("storage/rag.sqlite3")
@@ -33,6 +34,8 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["ollama", "openai"],
         help="Use an LLM provider for synthesis. Use 'ollama' for local models.",
     )
+
+    subparsers.add_parser("status", help="Show index and LLM provider status")
 
     return parser
 
@@ -65,5 +68,7 @@ def main() -> None:
                     print(answer_from_results(args.question, results))
             else:
                 print(answer_from_results(args.question, results))
+        elif args.command == "status":
+            print(build_status_report(store, Path(args.db)))
     finally:
         store.close()

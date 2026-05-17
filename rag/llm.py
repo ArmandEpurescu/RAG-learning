@@ -49,6 +49,29 @@ def load_ollama_config() -> OllamaConfig:
     return OllamaConfig(model=model, base_url=base_url.rstrip("/"))
 
 
+def fetch_ollama_models(config: OllamaConfig | None = None) -> list[str]:
+    config = config or load_ollama_config()
+    request = urllib.request.Request(url=f"{config.base_url}/api/tags", method="GET")
+
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise LlmError(f"Ollama returned HTTP {error.code}: {body}") from error
+    except urllib.error.URLError as error:
+        raise LlmError(
+            "Could not contact Ollama. Start it with `ollama serve` or open the Ollama app."
+        ) from error
+
+    models = data.get("models", [])
+    return sorted(
+        model["name"]
+        for model in models
+        if isinstance(model, dict) and isinstance(model.get("name"), str)
+    )
+
+
 def build_rag_prompt(question: str, results: list[SearchResult]) -> str:
     context_blocks = []
     for index, result in enumerate(results, start=1):

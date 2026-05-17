@@ -47,6 +47,7 @@ python -m rag ask "What are the goals of this project?" --llm openai
 python -m rag ingest data --reset
 python -m rag search "rag local" --top-k 5
 python -m rag ask "How does the project work?"
+python -m rag status
 ```
 
 ## How It Works

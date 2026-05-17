@@ -1,8 +1,9 @@
+import io
 import os
 import unittest
 from unittest.mock import patch
 
-from rag.llm import build_rag_prompt, load_ollama_config
+from rag.llm import build_rag_prompt, fetch_ollama_models, load_ollama_config
 from rag.retrieval import SearchResult
 from rag.storage import StoredChunk
 
@@ -32,6 +33,15 @@ class LlmTests(unittest.TestCase):
 
         self.assertEqual(config.model, "llama3.2:3b")
         self.assertEqual(config.base_url, "http://localhost:11434")
+
+    def test_fetch_ollama_models_returns_sorted_names(self):
+        payload = b'{"models":[{"name":"mistral:7b"},{"name":"llama3.2:3b"}]}'
+
+        with patch("urllib.request.urlopen") as urlopen:
+            urlopen.return_value.__enter__.return_value = io.BytesIO(payload)
+            models = fetch_ollama_models()
+
+        self.assertEqual(models, ["llama3.2:3b", "mistral:7b"])
 
 
 if __name__ == "__main__":

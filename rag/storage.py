@@ -60,6 +60,12 @@ class RagStore:
             for row in rows
         ]
 
+    def stats(self) -> dict[str, int]:
+        row = self.connection.execute(
+            "SELECT COUNT(*) AS chunks, COUNT(DISTINCT path) AS documents FROM chunks"
+        ).fetchone()
+        return {"documents": row["documents"], "chunks": row["chunks"]}
+
     def _init_schema(self) -> None:
         self.connection.execute(
             """
@@ -76,4 +82,3 @@ class RagStore:
             "CREATE INDEX IF NOT EXISTS idx_chunks_path ON chunks(path)"
         )
         self.connection.commit()
-
